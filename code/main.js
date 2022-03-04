@@ -38,7 +38,7 @@ loadSprite("player", "/sprites/ship-spritesheet.png", {
 
 // SCENE: START
 scene("start", () => {
-  addButton("Go Random", vec2(width()/2, (height()/10)*2), () => go("battle"))
+  addButton("All Levels", vec2(width()/2, (height()/10)*2), () => go("battle"))
   addButton("Pick Level", vec2(width()/2, (height()/10)*4), () => go("levels"))
   addButton("Settings", vec2(width()/2, (height()/10)*6), () => go("settings"))
   addButton("Quit", vec2(width()/2, (height()/10)*8), () => window.close())
@@ -46,8 +46,21 @@ scene("start", () => {
 
 // SCENE: LEVELS
 scene("levels", () => {
-  addButton("1s", vec2(width()/2, (height()/7)*2), () => go("battle",1))
+  addButton("0", vec2(width()/2, (height()/8)*1), () => go("battle",0))
+  addButton("1", vec2((width()/8)*1, (height()/8)*3), () => go("battle",1))
+  addButton("2", vec2((width()/8)*3, (height()/8)*3), () => go("battle",2))
+  addButton("3", vec2((width()/8)*5, (height()/8)*3), () => go("battle",3))
+  addButton("4", vec2((width()/8)*7, (height()/8)*3), () => go("battle",4))
+  addButton("5", vec2((width()/8)*1, (height()/8)*5), () => go("battle",5))
+  addButton("6", vec2((width()/8)*3, (height()/8)*5), () => go("battle",6))
+  addButton("7", vec2((width()/8)*5, (height()/8)*5), () => go("battle",7))
+  addButton("8", vec2((width()/8)*7, (height()/8)*5), () => go("battle",8))
+  addButton("9", vec2((width()/8)*1, (height()/8)*7), () => go("battle",9))
+  addButton("10", vec2((width()/8)*3, (height()/8)*7), () => go("battle",10))
+  addButton("11", vec2((width()/8)*5, (height()/8)*7), () => go("battle",11))
+  addButton("12", vec2((width()/8)*7, (height()/8)*7), () => go("battle",12))
 })
+
 
 // SCENE: SETTINGS
 scene("settings", () => {
@@ -100,7 +113,7 @@ scene("battle", (level) => {
 			detune: rand(-1200, 1200),
 		})
   })
-	
+	//keyboard controls
   onKeyDown("left", () => {
 		player.move(-PLAYER_SPEED, 0)
     if(player.curAnim()!=="turn"){
@@ -145,13 +158,51 @@ onKeyRelease(["left", "right"], () => {
   var thisLevel = shuffleArray(levels)
   // for each number in list, start play loop
   // on completion of play loop, loop next number in list
-  // once all numbers are complete, to to win
+  // once all numbers are complete, go to win
 
   var factorA = level
-	var factorB = thisLevel[0]
+	var factorB = thisLevel[1]
   var correctAnswer = factorA * factorB;
+  var cyclesCount = 0
+  var currentPosition = 0
+  var firstRun = true
+  //current bug: does not loop over time, just loads everything at once
+  loop(4,()=>{
+    if (firstRun){
+      add([
+    		text(factorA + "x" + factorB, { size: 110 }),
+    		pos(width()/2, height()/10),
+    		origin("center"),
+    		fixed(),
+        lifespan(8),
+    		"question"
+    	])
+      firstRun=false
+    }
+    if(cyclesCount==2){
+      cyclesCount=0
+      if(currentPosition==11){
+        go("win",scoreText.text)
+      }
+      else {
+      currentPosition++
+      factorB = thisLevel[currentPosition]
+      add([
+    		text(factorA + "x" + factorB, { size: 110 }),
+    		pos(width()/2, height()/10),
+    		origin("center"),
+    		fixed(),
+        lifespan(10),
+    		"question"
+    	])
+      }
+    }
+    generateEnemies(factorA,factorB,multTable,correctAnswer);
+    cyclesCount++
+    console.log("cycles: " + cyclesCount + ", currentP: " + currentPosition + ", factorB: " + factorB)
+  })
   
-  for (var v = 0; v < 11; v++) {
+  /*for (var v = 0; v < 11; v++) {
     factorB = thisLevel[v]
     correctAnswer = factorA * factorB;
     
@@ -163,12 +214,7 @@ onKeyRelease(["left", "right"], () => {
       lifespan(15),
   		"question"
   	])
-    
-    for (var i = 0; i < 3; i++){
-      generateEnemies(factorA,factorB,multTable,correctAnswer);
-      wait(5)
-    }
-  }
+  }*/
 
 //  loop(4,()=>{
 //    generateEnemies(level,level,multTable,correctAnswer);
@@ -189,9 +235,9 @@ onKeyRelease(["left", "right"], () => {
 		play("explode")
 		addExplode(b.pos, 1, 24, 1)
     
-    if(scoreText.text >= 10){
+/*  if(scoreText.text >= 10){
       go("win",scoreText.text)
-    }
+    }*/
   })
 })
 
@@ -245,6 +291,7 @@ function grow(rate) {
 }
 
 function generateEnemies(fact1,fact2,multTable,correctAnswer) {
+  console.log("generating")
   for (var v = 0; v < 8; v++) {
     var textVal = multTable[randi(fact1,fact2)][randi(1,13)];
     if(textVal == correctAnswer){

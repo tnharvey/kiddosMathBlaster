@@ -2930,13 +2930,25 @@ vec4 frag(vec3 pos, vec2 uv, vec4 color, sampler2D tex) {
     }
   });
   scene("start", () => {
-    addButton("Go Random", vec2(width() / 2, height() / 10 * 2), () => go("battle"));
+    addButton("All Levels", vec2(width() / 2, height() / 10 * 2), () => go("battle"));
     addButton("Pick Level", vec2(width() / 2, height() / 10 * 4), () => go("levels"));
     addButton("Settings", vec2(width() / 2, height() / 10 * 6), () => go("settings"));
     addButton("Quit", vec2(width() / 2, height() / 10 * 8), () => window.close());
   });
   scene("levels", () => {
-    addButton("1s", vec2(width() / 2, height() / 7 * 2), () => go("battle", 1));
+    addButton("0", vec2(width() / 2, height() / 8 * 1), () => go("battle", 0));
+    addButton("1", vec2(width() / 8 * 1, height() / 8 * 3), () => go("battle", 1));
+    addButton("2", vec2(width() / 8 * 3, height() / 8 * 3), () => go("battle", 2));
+    addButton("3", vec2(width() / 8 * 5, height() / 8 * 3), () => go("battle", 3));
+    addButton("4", vec2(width() / 8 * 7, height() / 8 * 3), () => go("battle", 4));
+    addButton("5", vec2(width() / 8 * 1, height() / 8 * 5), () => go("battle", 5));
+    addButton("6", vec2(width() / 8 * 3, height() / 8 * 5), () => go("battle", 6));
+    addButton("7", vec2(width() / 8 * 5, height() / 8 * 5), () => go("battle", 7));
+    addButton("8", vec2(width() / 8 * 7, height() / 8 * 5), () => go("battle", 8));
+    addButton("9", vec2(width() / 8 * 1, height() / 8 * 7), () => go("battle", 9));
+    addButton("10", vec2(width() / 8 * 3, height() / 8 * 7), () => go("battle", 10));
+    addButton("11", vec2(width() / 8 * 5, height() / 8 * 7), () => go("battle", 11));
+    addButton("12", vec2(width() / 8 * 7, height() / 8 * 7), () => go("battle", 12));
   });
   scene("settings", () => {
     addButton("Back", vec2(width() / 2, height() / 7 * 2), () => go("start"));
@@ -3015,24 +3027,44 @@ vec4 frag(vec3 pos, vec2 uv, vec4 color, sampler2D tex) {
     });
     var thisLevel = shuffleArray(levels);
     var factorA = level;
-    var factorB = thisLevel[0];
+    var factorB = thisLevel[1];
     var correctAnswer = factorA * factorB;
-    for (var v2 = 0; v2 < 11; v2++) {
-      factorB = thisLevel[v2];
-      correctAnswer = factorA * factorB;
-      add([
-        text(factorA + "x" + factorB, { size: 110 }),
-        pos(width() / 2, height() / 10),
-        origin("center"),
-        fixed(),
-        lifespan(15),
-        "question"
-      ]);
-      for (var i = 0; i < 3; i++) {
-        generateEnemies(factorA, factorB, multTable, correctAnswer);
-        wait(5);
+    var cyclesCount = 0;
+    var currentPosition = 0;
+    var firstRun = true;
+    loop(4, () => {
+      if (firstRun) {
+        add([
+          text(factorA + "x" + factorB, { size: 110 }),
+          pos(width() / 2, height() / 10),
+          origin("center"),
+          fixed(),
+          lifespan(8),
+          "question"
+        ]);
+        firstRun = false;
       }
-    }
+      if (cyclesCount == 2) {
+        cyclesCount = 0;
+        if (currentPosition == 11) {
+          go("win", scoreText.text);
+        } else {
+          currentPosition++;
+          factorB = thisLevel[currentPosition];
+          add([
+            text(factorA + "x" + factorB, { size: 110 }),
+            pos(width() / 2, height() / 10),
+            origin("center"),
+            fixed(),
+            lifespan(10),
+            "question"
+          ]);
+        }
+      }
+      generateEnemies(factorA, factorB, multTable, correctAnswer);
+      cyclesCount++;
+      console.log("cycles: " + cyclesCount + ", currentP: " + currentPosition + ", factorB: " + factorB);
+    });
     onCollide("bullet", "answer", (b2, e) => {
       destroy(b2);
       destroy(e);
@@ -3046,9 +3078,6 @@ vec4 frag(vec3 pos, vec2 uv, vec4 color, sampler2D tex) {
       scoreText.text = scoreText.text + 5;
       play("explode");
       addExplode(b2.pos, 1, 24, 1);
-      if (scoreText.text >= 10) {
-        go("win", scoreText.text);
-      }
     });
   });
   scene("win", (score) => {
@@ -3096,6 +3125,7 @@ vec4 frag(vec3 pos, vec2 uv, vec4 color, sampler2D tex) {
   }
   __name(grow, "grow");
   function generateEnemies(fact1, fact2, multTable, correctAnswer) {
+    console.log("generating");
     for (var v2 = 0; v2 < 8; v2++) {
       var textVal = multTable[randi(fact1, fact2)][randi(1, 13)];
       if (textVal == correctAnswer) {
