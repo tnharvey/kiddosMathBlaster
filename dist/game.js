@@ -2913,23 +2913,68 @@ vec4 frag(vec3 pos, vec2 uv, vec4 color, sampler2D tex) {
   }, "default");
 
   // code/main.js
-  no();
-  loadBean();
+  no({ background: [0, 0, 0] });
   loadSound("hit", "https://kaboomjs.com/sounds/hit.mp3");
   loadSound("shoot", "https://kaboomjs.com/sounds/shoot.mp3");
   loadSound("explode", "https://kaboomjs.com/sounds/explode.mp3");
+  loadSprite("player", "/sprites/ship-spritesheet.png", {
+    sliceX: 5,
+    anims: {
+      "idle": {
+        from: 0,
+        to: 2,
+        speed: 5,
+        loop: true
+      },
+      "turn": 3
+    }
+  });
+  loadSprite("stars", "/sprites/stars-spritesheet.png", {
+    sliceX: 8,
+    anims: {
+      "smStar": {
+        from: 0,
+        to: 1,
+        speed: 2,
+        loop: true
+      },
+      "mStar": {
+        from: 0,
+        to: 1,
+        speed: 2,
+        loop: true
+      },
+      "plStar": {
+        from: 0,
+        to: 1,
+        speed: 2,
+        loop: true
+      },
+      "bgStar": {
+        from: 0,
+        to: 1,
+        speed: 2,
+        loop: true
+      }
+    }
+  });
+  scene("test", () => {
+    const PLAYER_SPEED = 480;
+  });
   scene("battle", () => {
-    const BULLET_SPEED = 1200;
     const PLAYER_SPEED = 480;
     const factorA = 5;
     const factorB = 2;
+    const levels = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
     const player = add([
-      sprite("bean"),
+      sprite("player"),
       area(),
+      scale(1.5),
       pos(width() / 2, height() - 64),
       origin("center")
     ]);
-    const score = add([
+    player.play("idle");
+    const scoreText = add([
       text(0, { size: 80 }),
       pos(width() / 10, height() / 10),
       origin("topleft"),
@@ -2944,60 +2989,24 @@ vec4 frag(vec3 pos, vec2 uv, vec4 color, sampler2D tex) {
     }
     onKeyDown("left", () => {
       player.move(-PLAYER_SPEED, 0);
+      if (player.curAnim() !== "turn") {
+        player.play("turn");
+        console.log("left");
+      }
       if (player.pos.x < 0) {
         player.pos.x = width();
       }
     });
     onKeyDown("right", () => {
       player.move(PLAYER_SPEED, 0);
+      player.flipX(true);
+      if (player.curAnim() !== "turn") {
+        player.play("turn");
+      }
       if (player.pos.x > width()) {
         player.pos.x = 0;
       }
     });
-    var correctAnswer = factorA * factorB;
-    loop(4, () => {
-      generateEnemies(5, 5);
-    });
-    add([
-      text(factorA + "x" + factorB, { size: 140 }),
-      pos(width() / 2, height() / 10),
-      origin("center"),
-      fixed(),
-      "question"
-    ]);
-    function generateEnemies(fact1, fact2) {
-      for (var v3 = 0; v3 < 8; v3++) {
-        var textVal = multTable[randi(fact1, fact2)][randi(1, 13)];
-        if (textVal == correctAnswer) {
-          textTag = "Answer";
-        } else {
-          textTag = "answer";
-        }
-        add([
-          pos(randi(width() / 10, width() - width() / 10), randi(height() / 10, height() - height() / 10)),
-          text(textVal, { size: 40 }),
-          lifespan(6),
-          origin("center"),
-          area(),
-          textTag
-        ]);
-      }
-    }
-    __name(generateEnemies, "generateEnemies");
-    function spawnBullet(p) {
-      add([
-        rect(12, 48),
-        area(),
-        pos(p),
-        origin("center"),
-        color(127, 127, 255),
-        outline(4),
-        move(UP, BULLET_SPEED),
-        cleanup(),
-        "bullet"
-      ]);
-    }
-    __name(spawnBullet, "spawnBullet");
     onKeyPress("space", () => {
       spawnBullet(player.pos.sub(16, 0));
       spawnBullet(player.pos.add(16, 0));
@@ -3006,37 +3015,52 @@ vec4 frag(vec3 pos, vec2 uv, vec4 color, sampler2D tex) {
         detune: rand(-1200, 1200)
       });
     });
+    onKeyRelease(["left", "right"], () => {
+      if (player.flipX) {
+        player.flipX(false);
+      }
+      player.play("idle");
+    });
+    var thisLevel = shuffleArray(levels);
+    var correctAnswer = factorA * factorB;
+    loop(4, () => {
+      generateEnemies(5, 5, multTable, correctAnswer);
+    });
+    add([
+      text(factorA + "x" + factorB, { size: 140 }),
+      pos(width() / 2, height() / 10),
+      origin("center"),
+      fixed(),
+      "question"
+    ]);
     onCollide("bullet", "answer", (b2, e) => {
       destroy(b2);
       destroy(e);
-      score.text = score.text - 1;
+      scoreText.text = scoreText.text - 1;
       play("explode");
       addExplode(b2.pos, 1, 24, 1);
     });
     onCollide("bullet", "Answer", (b2, e) => {
       destroy(b2);
       destroy(e);
-      score.text = score.text + 5;
+      scoreText.text = scoreText.text + 5;
       play("explode");
       addExplode(b2.pos, 1, 24, 1);
+      if (scoreText.text >= 10) {
+        go("win", scoreText.text);
+      }
     });
   });
-  scene("win", ({ time, boss }) => {
-    const b2 = burp({
-      loop: true
-    });
-    loop(0.5, () => {
-      b2.detune(rand(-1200, 1200));
-    });
-    add([
-      sprite(boss),
-      color(255, 0, 0),
+  scene("win", (score) => {
+    const player = add([
+      sprite("player"),
       origin("center"),
-      scale(8),
+      scale(5),
       pos(width() / 2, height() / 2)
     ]);
+    player.play("idle");
     add([
-      text(time.toFixed(2), 24),
+      text(score, 24),
       origin("center"),
       pos(width() / 2, height() / 2)
     ]);
@@ -3069,6 +3093,44 @@ vec4 frag(vec3 pos, vec2 uv, vec4 color, sampler2D tex) {
     };
   }
   __name(grow, "grow");
+  function generateEnemies(fact1, fact2, multTable, correctAnswer) {
+    for (var v2 = 0; v2 < 8; v2++) {
+      var textVal = multTable[randi(fact1, fact2)][randi(1, 13)];
+      if (textVal == correctAnswer) {
+        textTag = "Answer";
+      } else {
+        textTag = "answer";
+      }
+      add([
+        pos(randi(width() / 10, width() - width() / 10), randi(height() / 10, height() - height() / 10)),
+        text(textVal, { size: 40 }),
+        lifespan(6),
+        origin("center"),
+        area(),
+        textTag
+      ]);
+    }
+  }
+  __name(generateEnemies, "generateEnemies");
+  function spawnBullet(p) {
+    const BULLET_SPEED = 1200;
+    add([
+      rect(4, 16),
+      area(),
+      pos(p),
+      origin("center"),
+      color(40, 40, 255),
+      outline(1),
+      move(UP, BULLET_SPEED),
+      cleanup(),
+      "bullet"
+    ]);
+  }
+  __name(spawnBullet, "spawnBullet");
+  function shuffleArray(arr) {
+    arr.sort(() => Math.random() - 0.5);
+  }
+  __name(shuffleArray, "shuffleArray");
   go("battle");
 })();
 //# sourceMappingURL=game.js.map
