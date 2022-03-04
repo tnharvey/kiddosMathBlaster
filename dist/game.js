@@ -3038,6 +3038,7 @@ vec4 frag(vec3 pos, vec2 uv, vec4 color, sampler2D tex) {
           text(factorA + "x" + factorB, { size: 110 }),
           pos(width() / 2, height() / 10),
           origin("center"),
+          color(180, 0, 0),
           fixed(),
           lifespan(8),
           "question"
@@ -3056,7 +3057,7 @@ vec4 frag(vec3 pos, vec2 uv, vec4 color, sampler2D tex) {
             pos(width() / 2, height() / 10),
             origin("center"),
             fixed(),
-            lifespan(10),
+            lifespan(8),
             "question"
           ]);
         }
@@ -3142,6 +3143,14 @@ vec4 frag(vec3 pos, vec2 uv, vec4 color, sampler2D tex) {
         textTag
       ]);
     }
+    add([
+      pos(randi(width() / 10, width() - width() / 10), randi(height() / 10, height() - height() / 10)),
+      text(correctAnswer, { size: 40 }),
+      lifespan(6),
+      origin("center"),
+      area(),
+      "Answer"
+    ]);
   }
   __name(generateEnemies, "generateEnemies");
   function spawnBullet(p) {

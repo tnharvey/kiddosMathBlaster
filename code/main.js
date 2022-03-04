@@ -2,7 +2,6 @@ import kaboom from "kaboom"
 
 // TODO: 
 // Current: now loading from multTable as function, ready to receive level data
-// Create and load multiple levels
 // Timing isn't conducive to repeating the Q/A sequence. Adjust to change question every few seconds, increase size and spacing of answers, etc.
 // make the letters fall in from the top at varying speeds to look paralax as well
 // refactor to make responsive to screen size
@@ -61,7 +60,6 @@ scene("levels", () => {
   addButton("12", vec2((width()/8)*7, (height()/8)*7), () => go("battle",12))
 })
 
-
 // SCENE: SETTINGS
 scene("settings", () => {
   addButton("Back", vec2(width()/2, (height()/7)*2), () => go("start"))
@@ -70,9 +68,7 @@ scene("settings", () => {
 // SCENE: BATTLE
 scene("battle", (level) => {
 	const PLAYER_SPEED = 480
-
   const levels = [0,1,2,3,4,5,6,7,8,9,10,11,12]
-  
 	const player = add([
 		sprite("player"),
 		area(),
@@ -90,7 +86,7 @@ scene("battle", (level) => {
 		fixed()
 	])
 
-  // Build multiplication table object. Reference with multTable[n][n]
+// Build multiplication table object. Reference with multTable[n][n]
   var multTable = {};
   for (var v = 0; v < 13; v++) {
       multTable[v] = {};
@@ -153,26 +149,23 @@ onKeyRelease(["left", "right"], () => {
   player.play("idle")
 })
 
-// Play Loop
+// PLAY LOOP
   // randomize list of numbers from 0 to 12
   var thisLevel = shuffleArray(levels)
-  // for each number in list, start play loop
-  // on completion of play loop, loop next number in list
-  // once all numbers are complete, go to win
-
   var factorA = level
 	var factorB = thisLevel[1]
   var correctAnswer = factorA * factorB;
   var cyclesCount = 0
   var currentPosition = 0
   var firstRun = true
-  //current bug: does not loop over time, just loads everything at once
+  
   loop(4,()=>{
     if (firstRun){
       add([
     		text(factorA + "x" + factorB, { size: 110 }),
     		pos(width()/2, height()/10),
     		origin("center"),
+        color(180,0,0),
     		fixed(),
         lifespan(8),
     		"question"
@@ -192,7 +185,7 @@ onKeyRelease(["left", "right"], () => {
     		pos(width()/2, height()/10),
     		origin("center"),
     		fixed(),
-        lifespan(10),
+        lifespan(8),
     		"question"
     	])
       }
@@ -201,24 +194,6 @@ onKeyRelease(["left", "right"], () => {
     cyclesCount++
     console.log("cycles: " + cyclesCount + ", currentP: " + currentPosition + ", factorB: " + factorB)
   })
-  
-  /*for (var v = 0; v < 11; v++) {
-    factorB = thisLevel[v]
-    correctAnswer = factorA * factorB;
-    
-    add([
-  		text(factorA + "x" + factorB, { size: 110 }),
-  		pos(width()/2, height()/10),
-  		origin("center"),
-  		fixed(),
-      lifespan(15),
-  		"question"
-  	])
-  }*/
-
-//  loop(4,()=>{
-//    generateEnemies(level,level,multTable,correctAnswer);
-//  })
 
 	onCollide("bullet", "answer",(b, e) => {
 		destroy(b)
@@ -309,6 +284,14 @@ function generateEnemies(fact1,fact2,multTable,correctAnswer) {
       textTag,
     ])
   }
+  add([
+      pos(randi(width()/10,width()-(width()/10)),randi(height()/10,height()-(height()/10))),
+      text(correctAnswer, { size: 40 }),
+      lifespan(6),
+      origin("center"),
+      area(),
+      "Answer",
+    ])
 }
   
 function spawnBullet(p) {
