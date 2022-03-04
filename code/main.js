@@ -2,14 +2,12 @@ import kaboom from "kaboom"
 
 // TODO: 
 // Current: now loading from multTable as function, ready to receive level data
-// load initial answers, then loop to load and destroy fewer answers more slowly
+// Create and load multiple levels
 // Timing isn't conducive to repeating the Q/A sequence. Adjust to change question every few seconds, increase size and spacing of answers, etc.
 // make the letters fall in from the top at varying speeds to look paralax as well
 // refactor to make responsive to screen size
-// create initial menu to select level
 // levels should be various multiplication tables (eventually addition, subtraction, division), but also have difficulty levels (L1 hint at beginning and all numbers on screen are from the same series, e.g. 5s, L2 no hint, L3 random numbers)
 // Also allow for adjusting game speed (and other parameters) in setting (store in DB or browser cache)
-// escape exits game to main menu
 // make "hint" mode that highlights the correct answer in the first 2 seconds for each round
 // make better sprites, visuals, BG, sounds, etc
 // improve scoring, including a DB that tracks high scores, progress, etc.
@@ -37,48 +35,29 @@ loadSprite("player", "/sprites/ship-spritesheet.png", {
 		"turn": 3,
 	},
 })
-loadSprite("stars", "/sprites/stars-spritesheet.png", {
-	sliceX: 8,
-	// Define animations
-	anims: {
-		"smStar": {
-			from: 0,
-			to: 1,
-			speed: 2,
-			loop: true,
-		},
-		"mStar": {
-			from: 0,
-			to: 1,
-			speed: 2,
-			loop: true,
-		},
-    "plStar": {
-			from: 0,
-			to: 1,
-			speed: 2,
-			loop: true,
-		},
-    "bgStar": {
-			from: 0,
-			to: 1,
-			speed: 2,
-			loop: true,
-		},
-	},
+
+// SCENE: START
+scene("start", () => {
+  addButton("Go Random", vec2(width()/2, (height()/10)*2), () => go("battle"))
+  addButton("Pick Level", vec2(width()/2, (height()/10)*4), () => go("levels"))
+  addButton("Settings", vec2(width()/2, (height()/10)*6), () => go("settings"))
+  addButton("Quit", vec2(width()/2, (height()/10)*8), () => window.close())
 })
-// SCENE: TEST
-scene("test", () => {
-  const PLAYER_SPEED = 480
-  
-  
+
+// SCENE: LEVELS
+scene("levels", () => {
+  addButton("1s", vec2(width()/2, (height()/7)*2), () => go("battle",1))
 })
+
+// SCENE: SETTINGS
+scene("settings", () => {
+  addButton("Back", vec2(width()/2, (height()/7)*2), () => go("start"))
+})
+
 // SCENE: BATTLE
-scene("battle", () => {
+scene("battle", (level) => {
 	const PLAYER_SPEED = 480
 
-	const factorA = 5
-	const factorB = 2
   const levels = [0,1,2,3,4,5,6,7,8,9,10,11,12]
   
 	const player = add([
@@ -108,7 +87,21 @@ scene("battle", () => {
   }
 
 // CONTROLS
-	onKeyDown("left", () => {
+  //mouse controls
+  onUpdate(() => {
+  	player.pos.x = mousePos().x
+  })
+  
+  onClick(() => {
+    spawnBullet(player.pos.sub(16, 0))
+		spawnBullet(player.pos.add(16, 0))
+		play("shoot", {
+			volume: 0.3,
+			detune: rand(-1200, 1200),
+		})
+  })
+	
+  onKeyDown("left", () => {
 		player.move(-PLAYER_SPEED, 0)
     if(player.curAnim()!=="turn"){
       player.play("turn")
@@ -138,6 +131,9 @@ scene("battle", () => {
 			detune: rand(-1200, 1200),
 		})
 	})
+  onKeyPress("escape", () => {
+		go("start")
+	})
 
 onKeyRelease(["left", "right"], () => {
   if(player.flipX){ player.flipX(false) }
@@ -150,18 +146,33 @@ onKeyRelease(["left", "right"], () => {
   // for each number in list, start play loop
   // on completion of play loop, loop next number in list
   // once all numbers are complete, to to win
-  var correctAnswer = factorA * factorB;
 
-  loop(4,()=>{
-    generateEnemies(5,5,multTable,correctAnswer);
-  })
-	add([
-		text(factorA + "x" + factorB, { size: 140 }),
-		pos(width()/2, height()/10),
-		origin("center"),
-		fixed(),
-		"question"
-	])
+  var factorA = level
+	var factorB = thisLevel[0]
+  var correctAnswer = factorA * factorB;
+  
+  for (var v = 0; v < 11; v++) {
+    factorB = thisLevel[v]
+    correctAnswer = factorA * factorB;
+    
+    add([
+  		text(factorA + "x" + factorB, { size: 110 }),
+  		pos(width()/2, height()/10),
+  		origin("center"),
+  		fixed(),
+      lifespan(15),
+  		"question"
+  	])
+    
+    for (var i = 0; i < 3; i++){
+      generateEnemies(factorA,factorB,multTable,correctAnswer);
+      wait(5)
+    }
+  }
+
+//  loop(4,()=>{
+//    generateEnemies(level,level,multTable,correctAnswer);
+//  })
 
 	onCollide("bullet", "answer",(b, e) => {
 		destroy(b)
@@ -198,8 +209,10 @@ const player =	add([
 	add([
 		text(score, 24),
 		origin("center"),
-		pos(width() / 2, height() / 2),
+		pos(width() / 2, (height()/7)*2),
 	])
+  addButton("Menu", vec2(width()/2, (height()/7)*5), () => go("start"))
+  addButton("Start Over", vec2(width()/2, (height()/7)*6), () => go("battle"))
 
 })
 
@@ -269,7 +282,35 @@ function spawnBullet(p) {
 }
 
 function shuffleArray(arr) {
-  arr.sort(() => Math.random() - 0.5);
+  return arr.sort(() => Math.random() - 0.5);
 }
+function addButton(txt, p, f) {
+//text is button text, p is button position, f is button function/action
 
-go("battle")
+	const btn = add([
+		text(txt),
+		pos(p),
+		area({ cursor: "pointer", }),
+		scale(0.5),
+		origin("center"),
+	])
+
+	btn.onClick(f)
+
+	btn.onUpdate(() => {
+		if (btn.isHovering()) {
+			const t = time() * 10
+			btn.color = rgb(
+				wave(0, 255, t),
+				wave(0, 255, t + 2),
+				wave(0, 255, t + 4),
+			)
+			btn.scale = vec2(0.8)
+		} else {
+			btn.scale = vec2(0.7)
+			btn.color = rgb()
+		}
+	})
+
+}
+go("start")

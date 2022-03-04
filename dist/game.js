@@ -2929,42 +2929,20 @@ vec4 frag(vec3 pos, vec2 uv, vec4 color, sampler2D tex) {
       "turn": 3
     }
   });
-  loadSprite("stars", "/sprites/stars-spritesheet.png", {
-    sliceX: 8,
-    anims: {
-      "smStar": {
-        from: 0,
-        to: 1,
-        speed: 2,
-        loop: true
-      },
-      "mStar": {
-        from: 0,
-        to: 1,
-        speed: 2,
-        loop: true
-      },
-      "plStar": {
-        from: 0,
-        to: 1,
-        speed: 2,
-        loop: true
-      },
-      "bgStar": {
-        from: 0,
-        to: 1,
-        speed: 2,
-        loop: true
-      }
-    }
+  scene("start", () => {
+    addButton("Go Random", vec2(width() / 2, height() / 10 * 2), () => go("battle"));
+    addButton("Pick Level", vec2(width() / 2, height() / 10 * 4), () => go("levels"));
+    addButton("Settings", vec2(width() / 2, height() / 10 * 6), () => go("settings"));
+    addButton("Quit", vec2(width() / 2, height() / 10 * 8), () => window.close());
   });
-  scene("test", () => {
-    const PLAYER_SPEED = 480;
+  scene("levels", () => {
+    addButton("1s", vec2(width() / 2, height() / 7 * 2), () => go("battle", 1));
   });
-  scene("battle", () => {
+  scene("settings", () => {
+    addButton("Back", vec2(width() / 2, height() / 7 * 2), () => go("start"));
+  });
+  scene("battle", (level) => {
     const PLAYER_SPEED = 480;
-    const factorA = 5;
-    const factorB = 2;
     const levels = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
     const player = add([
       sprite("player"),
@@ -2987,6 +2965,17 @@ vec4 frag(vec3 pos, vec2 uv, vec4 color, sampler2D tex) {
         multTable[v2][i] = i * v2;
       }
     }
+    onUpdate(() => {
+      player.pos.x = mousePos().x;
+    });
+    onClick(() => {
+      spawnBullet(player.pos.sub(16, 0));
+      spawnBullet(player.pos.add(16, 0));
+      play("shoot", {
+        volume: 0.3,
+        detune: rand(-1200, 1200)
+      });
+    });
     onKeyDown("left", () => {
       player.move(-PLAYER_SPEED, 0);
       if (player.curAnim() !== "turn") {
@@ -3015,6 +3004,9 @@ vec4 frag(vec3 pos, vec2 uv, vec4 color, sampler2D tex) {
         detune: rand(-1200, 1200)
       });
     });
+    onKeyPress("escape", () => {
+      go("start");
+    });
     onKeyRelease(["left", "right"], () => {
       if (player.flipX) {
         player.flipX(false);
@@ -3022,17 +3014,25 @@ vec4 frag(vec3 pos, vec2 uv, vec4 color, sampler2D tex) {
       player.play("idle");
     });
     var thisLevel = shuffleArray(levels);
+    var factorA = level;
+    var factorB = thisLevel[0];
     var correctAnswer = factorA * factorB;
-    loop(4, () => {
-      generateEnemies(5, 5, multTable, correctAnswer);
-    });
-    add([
-      text(factorA + "x" + factorB, { size: 140 }),
-      pos(width() / 2, height() / 10),
-      origin("center"),
-      fixed(),
-      "question"
-    ]);
+    for (var v2 = 0; v2 < 11; v2++) {
+      factorB = thisLevel[v2];
+      correctAnswer = factorA * factorB;
+      add([
+        text(factorA + "x" + factorB, { size: 110 }),
+        pos(width() / 2, height() / 10),
+        origin("center"),
+        fixed(),
+        lifespan(15),
+        "question"
+      ]);
+      for (var i = 0; i < 3; i++) {
+        generateEnemies(factorA, factorB, multTable, correctAnswer);
+        wait(5);
+      }
+    }
     onCollide("bullet", "answer", (b2, e) => {
       destroy(b2);
       destroy(e);
@@ -3062,8 +3062,10 @@ vec4 frag(vec3 pos, vec2 uv, vec4 color, sampler2D tex) {
     add([
       text(score, 24),
       origin("center"),
-      pos(width() / 2, height() / 2)
+      pos(width() / 2, height() / 7 * 2)
     ]);
+    addButton("Menu", vec2(width() / 2, height() / 7 * 5), () => go("start"));
+    addButton("Start Over", vec2(width() / 2, height() / 7 * 6), () => go("battle"));
   });
   function addExplode(p, n, rad, size) {
     for (let i = 0; i < n; i++) {
@@ -3128,9 +3130,30 @@ vec4 frag(vec3 pos, vec2 uv, vec4 color, sampler2D tex) {
   }
   __name(spawnBullet, "spawnBullet");
   function shuffleArray(arr) {
-    arr.sort(() => Math.random() - 0.5);
+    return arr.sort(() => Math.random() - 0.5);
   }
   __name(shuffleArray, "shuffleArray");
-  go("battle");
+  function addButton(txt, p, f2) {
+    const btn = add([
+      text(txt),
+      pos(p),
+      area({ cursor: "pointer" }),
+      scale(0.5),
+      origin("center")
+    ]);
+    btn.onClick(f2);
+    btn.onUpdate(() => {
+      if (btn.isHovering()) {
+        const t = time() * 10;
+        btn.color = rgb(wave(0, 255, t), wave(0, 255, t + 2), wave(0, 255, t + 4));
+        btn.scale = vec2(0.8);
+      } else {
+        btn.scale = vec2(0.7);
+        btn.color = rgb();
+      }
+    });
+  }
+  __name(addButton, "addButton");
+  go("start");
 })();
 //# sourceMappingURL=game.js.map
