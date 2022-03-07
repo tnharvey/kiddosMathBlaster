@@ -2913,6 +2913,18 @@ vec4 frag(vec3 pos, vec2 uv, vec4 color, sampler2D tex) {
   }, "default");
 
   // code/main.js
+  var PLAYER_SPEED = 480;
+  var SPEED_FACTOR = 0.5;
+  var FALL_SPEED = 75;
+  var multTable = {};
+  for (v2 = 0; v2 < 13; v2++) {
+    multTable[v2] = {};
+    for (i = 0; i < 13; i++) {
+      multTable[v2][i] = i * v2;
+    }
+  }
+  var i;
+  var v2;
   no({ background: [0, 0, 0] });
   loadSound("hit", "https://kaboomjs.com/sounds/hit.mp3");
   loadSound("shoot", "https://kaboomjs.com/sounds/shoot.mp3");
@@ -2928,6 +2940,15 @@ vec4 frag(vec3 pos, vec2 uv, vec4 color, sampler2D tex) {
       },
       "turn": 3
     }
+  });
+  var hints = false;
+  scene("test", () => {
+    addText("answer", { factA: 5, factB: 2, correctAnswer: 10 });
+    addText("answer", { factA: 5, factB: 2, correctAnswer: 10 });
+    addText("answer", { factA: 5, factB: 2, correctAnswer: 10 });
+    addText("answer", { factA: 5, factB: 2, correctAnswer: 10 });
+    addText("answer", { factA: 5, factB: 2, correctAnswer: 10 });
+    addText("Answer", { factA: 5, factB: 2, correctAnswer: 10 });
   });
   scene("start", () => {
     addButton("All Levels", vec2(width() / 2, height() / 10 * 2), () => go("battle"));
@@ -2951,10 +2972,18 @@ vec4 frag(vec3 pos, vec2 uv, vec4 color, sampler2D tex) {
     addButton("12", vec2(width() / 8 * 7, height() / 8 * 7), () => go("battle", 12));
   });
   scene("settings", () => {
-    addButton("Back", vec2(width() / 2, height() / 7 * 2), () => go("start"));
+    var hintsVal = "";
+    if (hints) {
+      hintsVal = "On";
+    } else {
+      hintsVal = "Off";
+    }
+    addButton("Hints: " + hintsVal, vec2(width() / 2, height() / 7 * 2), () => {
+      hints = !hints;
+    });
+    addButton("Back", vec2(width() / 2, height() / 7 * 5), () => go("start"));
   });
   scene("battle", (level) => {
-    const PLAYER_SPEED = 480;
     const levels = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
     const player = add([
       sprite("player"),
@@ -2970,13 +2999,6 @@ vec4 frag(vec3 pos, vec2 uv, vec4 color, sampler2D tex) {
       origin("topleft"),
       fixed()
     ]);
-    var multTable = {};
-    for (var v2 = 0; v2 < 13; v2++) {
-      multTable[v2] = {};
-      for (var i = 0; i < 13; i++) {
-        multTable[v2][i] = i * v2;
-      }
-    }
     onUpdate(() => {
       player.pos.x = mousePos().x;
     });
@@ -2992,7 +3014,6 @@ vec4 frag(vec3 pos, vec2 uv, vec4 color, sampler2D tex) {
       player.move(-PLAYER_SPEED, 0);
       if (player.curAnim() !== "turn") {
         player.play("turn");
-        console.log("left");
       }
       if (player.pos.x < 0) {
         player.pos.x = width();
@@ -3032,7 +3053,7 @@ vec4 frag(vec3 pos, vec2 uv, vec4 color, sampler2D tex) {
     var cyclesCount = 0;
     var currentPosition = 0;
     var firstRun = true;
-    loop(4, () => {
+    loop(6, () => {
       if (firstRun) {
         add([
           text(factorA + "x" + factorB, { size: 110 }),
@@ -3052,19 +3073,33 @@ vec4 frag(vec3 pos, vec2 uv, vec4 color, sampler2D tex) {
         } else {
           currentPosition++;
           factorB = thisLevel[currentPosition];
+          correctAnswer = factorA * factorB;
           add([
             text(factorA + "x" + factorB, { size: 110 }),
             pos(width() / 2, height() / 10),
             origin("center"),
+            color(180, 0, 0),
             fixed(),
-            lifespan(8),
+            lifespan(10),
             "question"
           ]);
         }
       }
-      generateEnemies(factorA, factorB, multTable, correctAnswer);
+      console.log(factorA + ", " + factorB + ", " + correctAnswer);
+      generateEnemies(factorA, factorB, correctAnswer);
+      onUpdate("answer", (t) => {
+        t.move(0, FALL_SPEED * SPEED_FACTOR);
+        if (t.pos.y - t.height > height()) {
+          destroy(t);
+        }
+      });
+      onUpdate("Answer", (t) => {
+        t.move(0, FALL_SPEED * SPEED_FACTOR);
+        if (t.pos.y - t.height > height()) {
+          destroy(t);
+        }
+      });
       cyclesCount++;
-      console.log("cycles: " + cyclesCount + ", currentP: " + currentPosition + ", factorB: " + factorB);
     });
     onCollide("bullet", "answer", (b2, e) => {
       destroy(b2);
@@ -3125,32 +3160,13 @@ vec4 frag(vec3 pos, vec2 uv, vec4 color, sampler2D tex) {
     };
   }
   __name(grow, "grow");
-  function generateEnemies(fact1, fact2, multTable, correctAnswer) {
-    console.log("generating");
+  function generateEnemies(fact1, fact2, correctAnswer) {
+    var enemyVals = { factA: fact1, factB: fact2, correctAnswer };
     for (var v2 = 0; v2 < 8; v2++) {
-      var textVal = multTable[randi(fact1, fact2)][randi(1, 13)];
-      if (textVal == correctAnswer) {
-        textTag = "Answer";
-      } else {
-        textTag = "answer";
-      }
-      add([
-        pos(randi(width() / 10, width() - width() / 10), randi(height() / 10, height() - height() / 10)),
-        text(textVal, { size: 40 }),
-        lifespan(6),
-        origin("center"),
-        area(),
-        textTag
-      ]);
+      console.log(enemyVals);
+      addText("Answer", enemyVals);
     }
-    add([
-      pos(randi(width() / 10, width() - width() / 10), randi(height() / 10, height() - height() / 10)),
-      text(correctAnswer, { size: 40 }),
-      lifespan(6),
-      origin("center"),
-      area(),
-      "Answer"
-    ]);
+    addText("Answer", enemyVals);
   }
   __name(generateEnemies, "generateEnemies");
   function spawnBullet(p) {
@@ -3172,6 +3188,70 @@ vec4 frag(vec3 pos, vec2 uv, vec4 color, sampler2D tex) {
     return arr.sort(() => Math.random() - 0.5);
   }
   __name(shuffleArray, "shuffleArray");
+  function addText(tag, opt) {
+    var textColor = rgb(255, 255, 255);
+    var textPos = vec2(randi(width() / 10, width() - width() / 10), randi(0, height() / 10));
+    if (tag == "question" || tag == "answer" || tag == "Answer") {
+      console.log(opt.factA + ", " + opt.factB);
+      var textVal = multTable[randi(opt.factA, opt.factB)][randi(1, 13)];
+    }
+    if (tag == "Answer" && hints) {
+      textColor = rgb(180, 0, 0);
+    }
+    if (tag == "question") {
+      add([
+        text(opt.factA + "x" + opt.factB, { size: 110 }),
+        pos(width() / 2, height() / 10),
+        origin("center"),
+        color(180, 0, 0),
+        fixed(),
+        lifespan(10),
+        tag
+      ]);
+    } else if (tag == "answer") {
+      add([
+        pos(textPos),
+        text(textVal, { size: 40 }),
+        lifespan(6),
+        origin("center"),
+        area(),
+        cleanup(),
+        tag,
+        {
+          speed: FALL_SPEED
+        }
+      ]);
+    } else if (tag == "Answer") {
+      add([
+        pos(textPos),
+        text(opt.correctAnswer, { size: 40 }),
+        lifespan(6),
+        color(textColor),
+        origin("center"),
+        area(),
+        cleanup(),
+        "Answer",
+        {
+          speed: FALL_SPEED
+        }
+      ]);
+    } else {
+      if (opt.pos in opt && opt.text in opt && opt.size in opt && opt.life in opt) {
+        add([
+          pos(opt.pos),
+          text(opt.text, { size: opt.size }),
+          lifespan(opt.life),
+          origin("center"),
+          area(),
+          cleanup(),
+          textTag
+        ]);
+      } else {
+        console.log("ERROR: addText() missing required values for generic text.");
+      }
+    }
+  }
+  __name(addText, "addText");
   function addButton(txt, p, f2) {
     const btn = add([
       text(txt),

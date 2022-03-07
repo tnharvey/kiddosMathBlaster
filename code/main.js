@@ -1,18 +1,47 @@
 import kaboom from "kaboom"
 
+var PLAYER_SPEED = 480
+var SPEED_FACTOR = 0.5
+var FALL_SPEED = 75
+// Build multiplication table object. Reference with multTable[n][n]
+var multTable = {};
+  
+  for (var v = 0; v < 13; v++) {
+      multTable[v] = {};
+      for (var i = 0; i < 13; i++) {
+          multTable[v][i] = i * v;
+      }
+  }
 // TODO: 
-// Current: now loading from multTable as function, ready to receive level data
-// Timing isn't conducive to repeating the Q/A sequence. Adjust to change question every few seconds, increase size and spacing of answers, etc.
-// make the letters fall in from the top at varying speeds to look paralax as well
-// refactor to make responsive to screen size
-// levels should be various multiplication tables (eventually addition, subtraction, division), but also have difficulty levels (L1 hint at beginning and all numbers on screen are from the same series, e.g. 5s, L2 no hint, L3 random numbers)
-// Also allow for adjusting game speed (and other parameters) in setting (store in DB or browser cache)
-// make "hint" mode that highlights the correct answer in the first 2 seconds for each round
-// make better sprites, visuals, BG, sounds, etc
-// improve scoring, including a DB that tracks high scores, progress, etc.
-// make powerups
-// provide story arc or progression (level up, badges, something)
-// add touch controls
+// Current: trying to refactor generateEnemies() into simpler function call to addText. Generates only correct answers. Fall rate increases with each wave (not good).
+// Settings. Get Hints to update on click. Add game speed as slider or +/- buttons
+// X Make the letters fall in from the top
+//    - at varying speeds
+//    - from more varried positions (maybe start some offscreen)
+// Add objects that can collide with and damage character (add life meter or hearts/shields)
+// Refactor to make responsive to screen size
+// X Levels should be various multiplication tables (eventually addition, subtraction, division),
+// but also have difficulty levels (L1 hint at beginning and all numbers on screen are from the same series, e.g. 5s, L2 no hint, L3 random numbers)
+// Also allow for adjusting game speed (and other parameters) in setting
+//  - Stored in Replit DB or browser cache)
+// X Make "hint" mode that highlights the correct answer
+//  - in the first 2 seconds for each round
+// Make better sprites, visuals, BG, sounds, etc
+// Improve scoring, including a DB that tracks high scores, progress, etc.
+// Make powerup system
+// Hearts/Shields to pick up
+// Pegacorn:
+//   - Rainbow beam (powerup bar increases with each correct answer. At full, all correct answers are captured. Beam resets for each level)
+//   - Wing sweep (blast from wings blows away all wrong answers. Magic tornado appears on screen, must capture the tornado to gain 1 powerup. Powerup drops after level completion.)
+//
+// Spaceship:
+//   - Each right answers powers up the three gravity beams. Full power captures all right answers
+//   - Freeze gun stops all movement for 4 seconds
+// Provide story arc or progression (level up, badges, something)
+//   - Darkness is coming from the far side of the universe and it has fragmented math. Match factors with solutions to mend the fabric of reality. There are two characters:
+//   - Pegacorn that shoots rainbows from its horn. (powerups can shoot things from wings as well, a spin that sweeps away the wrong answers, etc.)
+//   - Captain Caputovi (latin for "egghead" :D ) flies his spaceship to defeat the darkness. Blasters to destroy bad answers, gravity beam to rejoin solutions with factors
+// Add touch controls
 
 kaboom({background: [ 0, 0, 0, ],})
 
@@ -35,7 +64,20 @@ loadSprite("player", "/sprites/ship-spritesheet.png", {
 	},
 })
 
-// SCENE: START
+var hints = false
+
+// SCENE: TEST
+
+scene("test", ()=> {
+  addText("answer",{factA:5,factB:2,correctAnswer:10})
+  addText("answer",{factA:5,factB:2,correctAnswer:10})
+  addText("answer",{factA:5,factB:2,correctAnswer:10})
+  addText("answer",{factA:5,factB:2,correctAnswer:10})
+  addText("answer",{factA:5,factB:2,correctAnswer:10})
+  addText("Answer",{factA:5,factB:2,correctAnswer:10})
+})
+
+// SCENE: START MENU
 scene("start", () => {
   addButton("All Levels", vec2(width()/2, (height()/10)*2), () => go("battle"))
   addButton("Pick Level", vec2(width()/2, (height()/10)*4), () => go("levels"))
@@ -43,7 +85,7 @@ scene("start", () => {
   addButton("Quit", vec2(width()/2, (height()/10)*8), () => window.close())
 })
 
-// SCENE: LEVELS
+// SCENE: LEVELS MENU
 scene("levels", () => {
   addButton("0", vec2(width()/2, (height()/8)*1), () => go("battle",0))
   addButton("1", vec2((width()/8)*1, (height()/8)*3), () => go("battle",1))
@@ -60,14 +102,21 @@ scene("levels", () => {
   addButton("12", vec2((width()/8)*7, (height()/8)*7), () => go("battle",12))
 })
 
-// SCENE: SETTINGS
+// SCENE: SETTINGS MENU
 scene("settings", () => {
-  addButton("Back", vec2(width()/2, (height()/7)*2), () => go("start"))
+  var hintsVal = ""
+  if(hints){hintsVal="On"}
+  else {hintsVal="Off"}
+  addButton("Hints: " + hintsVal, vec2(width()/2, (height()/7)*2), () => {
+    hints = !hints
+    
+  })
+  addButton("Back", vec2(width()/2, (height()/7)*5), () => go("start"))
 })
 
 // SCENE: BATTLE
 scene("battle", (level) => {
-	const PLAYER_SPEED = 480
+
   const levels = [0,1,2,3,4,5,6,7,8,9,10,11,12]
 	const player = add([
 		sprite("player"),
@@ -85,15 +134,6 @@ scene("battle", (level) => {
 	origin("topleft"),
 		fixed()
 	])
-
-// Build multiplication table object. Reference with multTable[n][n]
-  var multTable = {};
-  for (var v = 0; v < 13; v++) {
-      multTable[v] = {};
-      for (var i = 0; i < 13; i++) {
-          multTable[v][i] = i * v;
-      }
-  }
 
 // CONTROLS
   //mouse controls
@@ -114,7 +154,6 @@ scene("battle", (level) => {
 		player.move(-PLAYER_SPEED, 0)
     if(player.curAnim()!=="turn"){
       player.play("turn")
-      console.log("left")
      }
 		if (player.pos.x < 0) {
 			player.pos.x = width()
@@ -159,7 +198,7 @@ onKeyRelease(["left", "right"], () => {
   var currentPosition = 0
   var firstRun = true
   
-  loop(4,()=>{
+  loop(6,()=>{
     if (firstRun){
       add([
     		text(factorA + "x" + factorB, { size: 110 }),
@@ -180,19 +219,34 @@ onKeyRelease(["left", "right"], () => {
       else {
       currentPosition++
       factorB = thisLevel[currentPosition]
+      correctAnswer=factorA*factorB
       add([
     		text(factorA + "x" + factorB, { size: 110 }),
     		pos(width()/2, height()/10),
     		origin("center"),
+        color(180,0,0),
     		fixed(),
-        lifespan(8),
+        lifespan(10),
     		"question"
     	])
       }
     }
-    generateEnemies(factorA,factorB,multTable,correctAnswer);
+    console.log(factorA + ", " + factorB + ", " + correctAnswer)
+    generateEnemies(factorA,factorB,correctAnswer);
+    onUpdate("answer", (t) => {
+  		t.move(0, FALL_SPEED * SPEED_FACTOR)
+  		if (t.pos.y - t.height > height()) {
+			  destroy(t)
+		  } 
+  	})
+    onUpdate("Answer", (t) => {
+  		t.move(0, FALL_SPEED * SPEED_FACTOR)
+  		if (t.pos.y - t.height > height()) {
+			  destroy(t)
+		  } 
+  	})
     cyclesCount++
-    console.log("cycles: " + cyclesCount + ", currentP: " + currentPosition + ", factorB: " + factorB)
+    //console.log("cycles: " + cyclesCount + ", currentP: " + currentPosition + ", factorB: " + factorB)
   })
 
 	onCollide("bullet", "answer",(b, e) => {
@@ -209,7 +263,6 @@ onKeyRelease(["left", "right"], () => {
     scoreText.text = scoreText.text + 5
 		play("explode")
 		addExplode(b.pos, 1, 24, 1)
-    
 /*  if(scoreText.text >= 10){
       go("win",scoreText.text)
     }*/
@@ -265,10 +318,11 @@ function grow(rate) {
   }
 }
 
-function generateEnemies(fact1,fact2,multTable,correctAnswer) {
-  console.log("generating")
+/*function generateEnemies(fact1,fact2,correctAnswer) {
+  var textColor = rgb(255,255,255)
   for (var v = 0; v < 8; v++) {
     var textVal = multTable[randi(fact1,fact2)][randi(1,13)];
+    var enemyPos = vec2(randi(width()/10,width()-(width()/10)),randi(0,height()/10))
     if(textVal == correctAnswer){
       textTag = "Answer";
     }
@@ -276,24 +330,45 @@ function generateEnemies(fact1,fact2,multTable,correctAnswer) {
       textTag = "answer";
     }
     add([
-      pos(randi(width()/10,width()-(width()/10)),randi(height()/10,height()-(height()/10))),
+      pos(enemyPos),
       text(textVal, { size: 40 }),
       lifespan(6),
       origin("center"),
       area(),
+      cleanup(),
       textTag,
+      {
+        speed: 75
+      },
     ])
   }
+  if(hints){
+    textColor = rgb(255,0,0)
+  }
   add([
-      pos(randi(width()/10,width()-(width()/10)),randi(height()/10,height()-(height()/10))),
+      pos(enemyPos),
       text(correctAnswer, { size: 40 }),
       lifespan(6),
+      color(textColor),
       origin("center"),
       area(),
+      cleanup(),
       "Answer",
+      {
+        speed: 75
+      },
     ])
+}*/
+
+function generateEnemies(fact1,fact2,correctAnswer) {
+  var enemyVals = {factA:fact1,factB:fact2,correctAnswer:correctAnswer}
+  for (var v = 0; v < 8; v++) {
+    console.log(enemyVals)
+    addText("Answer",enemyVals)
+  }
+  addText("Answer",enemyVals)
 }
-  
+
 function spawnBullet(p) {
   const BULLET_SPEED = 1200
   
@@ -314,9 +389,84 @@ function spawnBullet(p) {
 function shuffleArray(arr) {
   return arr.sort(() => Math.random() - 0.5);
 }
+
+function addText(tag,opt) {
+  var textColor = rgb(255,255,255)
+  var textPos = vec2(randi(width()/10,width()-(width()/10)),randi(0,height()/10))
+  if (tag=="question"||tag=="answer"||tag=="Answer"){
+    //if(opt.factA in opt && opt.factB in opt){
+    console.log(opt.factA + ", " + opt.factB)  
+    var textVal = multTable[randi(opt.factA,opt.factB)][randi(1,13)]
+    /*}
+    else {
+      console.log("ERROR: Required values missing from addText() arguments for Question or Answer type.")
+    return
+    }*/
+  }
+  
+  if(tag=="Answer" && hints){
+    textColor = rgb (180,0,0)
+  }
+  if (tag == "question"){
+    add([
+    		text(opt.factA + "x" + opt.factB, { size: 110 }),
+    		pos(width()/2, height()/10),
+    		origin("center"),
+        color(180,0,0),
+    		fixed(),
+        lifespan(10),
+    		tag
+    	])
+  }  
+  else if(tag=="answer") {
+      add([
+        pos(textPos),
+        text(textVal, { size: 40 }),
+        lifespan(6),
+        origin("center"),
+        area(),
+        cleanup(),
+        tag,
+        {
+          speed: FALL_SPEED
+        },
+      ])
+    }
+    else if (tag == "Answer"){
+      add([
+          pos(textPos),
+          text(opt.correctAnswer, { size: 40 }),
+          lifespan(6),
+          color(textColor),
+          origin("center"),
+          area(),
+          cleanup(),
+          "Answer",
+          {
+            speed: FALL_SPEED
+          },
+        ])
+    }
+  else {
+    if(opt.pos in opt && opt.text in opt && opt.size in opt && opt.life in opt){
+      add([
+        pos(opt.pos),
+        text(opt.text, { size: opt.size }),
+        lifespan(opt.life),
+        origin("center"),
+        area(),
+        cleanup(),
+        textTag,
+      ])
+    }
+    else {
+      console.log("ERROR: addText() missing required values for generic text.")
+    }
+  }    
+}
+
 function addButton(txt, p, f) {
 //text is button text, p is button position, f is button function/action
-
 	const btn = add([
 		text(txt),
 		pos(p),
@@ -324,9 +474,7 @@ function addButton(txt, p, f) {
 		scale(0.5),
 		origin("center"),
 	])
-
 	btn.onClick(f)
-
 	btn.onUpdate(() => {
 		if (btn.isHovering()) {
 			const t = time() * 10
