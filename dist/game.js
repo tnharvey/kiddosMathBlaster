@@ -2915,7 +2915,7 @@ vec4 frag(vec3 pos, vec2 uv, vec4 color, sampler2D tex) {
   // code/main.js
   var PLAYER_SPEED = 480;
   var SPEED_FACTOR = 0.5;
-  var FALL_SPEED = 75;
+  var GRAVITY = 30;
   var multTable = {};
   for (v2 = 0; v2 < 13; v2++) {
     multTable[v2] = {};
@@ -3004,6 +3004,7 @@ vec4 frag(vec3 pos, vec2 uv, vec4 color, sampler2D tex) {
       pos(width() / 2, height() - 64),
       origin("center")
     ]);
+    gravity(GRAVITY * SPEED_FACTOR);
     player.play("idle");
     const scoreText = add([
       text(0, { size: 80 }),
@@ -3114,18 +3115,6 @@ vec4 frag(vec3 pos, vec2 uv, vec4 color, sampler2D tex) {
       }
       console.log(factorA + ", " + factorB + ", " + correctAnswer);
       generateEnemies(factorA, factorB, correctAnswer);
-      onUpdate("answer", (t) => {
-        t.move(0, FALL_SPEED * SPEED_FACTOR);
-        if (t.pos.y - t.height > height()) {
-          destroy(t);
-        }
-      });
-      onUpdate("Answer", (t) => {
-        t.move(0, FALL_SPEED * SPEED_FACTOR);
-        if (t.pos.y - t.height > height()) {
-          destroy(t);
-        }
-      });
       cyclesCount++;
     });
     onCollide("bullet", "answer", (b2, e) => {
@@ -3242,11 +3231,9 @@ vec4 frag(vec3 pos, vec2 uv, vec4 color, sampler2D tex) {
         lifespan(6),
         origin("center"),
         area(),
+        body(),
         cleanup(),
-        tag,
-        {
-          speed: FALL_SPEED
-        }
+        tag
       ]);
     } else if (tag == "Answer") {
       add([
@@ -3256,11 +3243,9 @@ vec4 frag(vec3 pos, vec2 uv, vec4 color, sampler2D tex) {
         color(textColor),
         origin("center"),
         area(),
+        body(),
         cleanup(),
-        "Answer",
-        {
-          speed: FALL_SPEED
-        }
+        "Answer"
       ]);
     } else {
       if (opt.pos in opt && opt.text in opt && opt.size in opt && opt.life in opt) {

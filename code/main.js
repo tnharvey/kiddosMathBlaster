@@ -1,6 +1,6 @@
 // TODO: 
-// Current: Fall rate increases with each wave (not good).
-// Settings. Add game speed as slider or +/- buttons
+// Current: 
+// Settings. Add game speed (gravity speed factor) as slider or +/- buttons
 // X Make the letters fall in from the top
 //    - at varying speeds
 //    - from more varried positions (maybe start some offscreen)
@@ -33,7 +33,8 @@ import kaboom from "kaboom"
 
 var PLAYER_SPEED = 480
 var SPEED_FACTOR = 0.5
-var FALL_SPEED = 75
+var GRAVITY = 30
+
 // Build multiplication table object. Reference with multTable[n][n]
 var multTable = {};
   
@@ -134,7 +135,7 @@ scene("battle", (level) => {
 		pos(width() / 2, height() - 64),
 		origin("center"),
 	])
-
+  gravity(GRAVITY*SPEED_FACTOR)
   player.play("idle")
   
   const scoreText = add([
@@ -259,18 +260,7 @@ onKeyRelease(["left", "right"], () => {
     }
     console.log(factorA + ", " + factorB + ", " + correctAnswer)
     generateEnemies(factorA,factorB,correctAnswer);
-    onUpdate("answer", (t) => {
-  		t.move(0, FALL_SPEED * SPEED_FACTOR)
-  		if (t.pos.y - t.height > height()) {
-			  destroy(t)
-		  } 
-  	})
-    onUpdate("Answer", (t) => {
-  		t.move(0, FALL_SPEED * SPEED_FACTOR)
-  		if (t.pos.y - t.height > height()) {
-			  destroy(t)
-		  } 
-  	})
+    
     cyclesCount++
     //console.log("cycles: " + cyclesCount + ", currentP: " + currentPosition + ", factorB: " + factorB)
   })
@@ -451,11 +441,9 @@ function addText(tag,opt) {
         lifespan(6),
         origin("center"),
         area(),
+        body(),
         cleanup(),
         tag,
-        {
-          speed: FALL_SPEED
-        },
       ])
     }
     else if (tag == "Answer"){
@@ -466,11 +454,9 @@ function addText(tag,opt) {
           color(textColor),
           origin("center"),
           area(),
+          body(),
           cleanup(),
           "Answer",
-          {
-            speed: FALL_SPEED
-          },
         ])
     }
   else {
