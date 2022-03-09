@@ -13,8 +13,8 @@ var multTable = {};
       }
   }
 // TODO: 
-// Current: trying to refactor generateEnemies() into simpler function call to addText. Generates only correct answers. Fall rate increases with each wave (not good).
-// Settings. Get Hints to update on click. Add game speed as slider or +/- buttons
+// Current: Fall rate increases with each wave (not good).
+// Settings. Add game speed as slider or +/- buttons
 // X Make the letters fall in from the top
 //    - at varying speeds
 //    - from more varried positions (maybe start some offscreen)
@@ -107,10 +107,18 @@ scene("settings", () => {
   var hintsVal = ""
   if(hints){hintsVal="On"}
   else {hintsVal="Off"}
-  addButton("Hints: " + hintsVal, vec2(width()/2, (height()/7)*2), () => {
+  addButton("Hints: ", vec2(width()/2, (height()/7)*2), () => {
     hints = !hints
-    
+    if(hints){hintsVal="On"}
+    else {hintsVal="Off"}
+    hintStatus.text=hintsVal
   })
+  var hintStatus=add([
+		text(hintsVal, { size: 50 }),
+		pos(width()/3*2, (height()/10)*2),
+	origin("topleft"),
+		fixed()
+	])
   addButton("Back", vec2(width()/2, (height()/7)*5), () => go("start"))
 })
 
@@ -364,7 +372,7 @@ function generateEnemies(fact1,fact2,correctAnswer) {
   var enemyVals = {factA:fact1,factB:fact2,correctAnswer:correctAnswer}
   for (var v = 0; v < 8; v++) {
     console.log(enemyVals)
-    addText("Answer",enemyVals)
+    addText("answer",enemyVals)
   }
   addText("Answer",enemyVals)
 }

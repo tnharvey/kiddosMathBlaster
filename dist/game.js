@@ -2978,9 +2978,21 @@ vec4 frag(vec3 pos, vec2 uv, vec4 color, sampler2D tex) {
     } else {
       hintsVal = "Off";
     }
-    addButton("Hints: " + hintsVal, vec2(width() / 2, height() / 7 * 2), () => {
+    addButton("Hints: ", vec2(width() / 2, height() / 7 * 2), () => {
       hints = !hints;
+      if (hints) {
+        hintsVal = "On";
+      } else {
+        hintsVal = "Off";
+      }
+      hintStatus.text = hintsVal;
     });
+    var hintStatus = add([
+      text(hintsVal, { size: 50 }),
+      pos(width() / 3 * 2, height() / 10 * 2),
+      origin("topleft"),
+      fixed()
+    ]);
     addButton("Back", vec2(width() / 2, height() / 7 * 5), () => go("start"));
   });
   scene("battle", (level) => {
@@ -3164,7 +3176,7 @@ vec4 frag(vec3 pos, vec2 uv, vec4 color, sampler2D tex) {
     var enemyVals = { factA: fact1, factB: fact2, correctAnswer };
     for (var v2 = 0; v2 < 8; v2++) {
       console.log(enemyVals);
-      addText("Answer", enemyVals);
+      addText("answer", enemyVals);
     }
     addText("Answer", enemyVals);
   }
