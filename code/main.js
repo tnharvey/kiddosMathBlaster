@@ -1,17 +1,3 @@
-import kaboom from "kaboom"
-
-var PLAYER_SPEED = 480
-var SPEED_FACTOR = 0.5
-var FALL_SPEED = 75
-// Build multiplication table object. Reference with multTable[n][n]
-var multTable = {};
-  
-  for (var v = 0; v < 13; v++) {
-      multTable[v] = {};
-      for (var i = 0; i < 13; i++) {
-          multTable[v][i] = i * v;
-      }
-  }
 // TODO: 
 // Current: Fall rate increases with each wave (not good).
 // Settings. Add game speed as slider or +/- buttons
@@ -42,6 +28,21 @@ var multTable = {};
 //   - Pegacorn that shoots rainbows from its horn. (powerups can shoot things from wings as well, a spin that sweeps away the wrong answers, etc.)
 //   - Captain Caputovi (latin for "egghead" :D ) flies his spaceship to defeat the darkness. Blasters to destroy bad answers, gravity beam to rejoin solutions with factors
 // Add touch controls
+
+import kaboom from "kaboom"
+
+var PLAYER_SPEED = 480
+var SPEED_FACTOR = 0.5
+var FALL_SPEED = 75
+// Build multiplication table object. Reference with multTable[n][n]
+var multTable = {};
+  
+  for (var v = 0; v < 13; v++) {
+      multTable[v] = {};
+      for (var i = 0; i < 13; i++) {
+          multTable[v][i] = i * v;
+      }
+  }
 
 kaboom({background: [ 0, 0, 0, ],})
 
@@ -146,7 +147,24 @@ scene("battle", (level) => {
 // CONTROLS
   //mouse controls
   onUpdate(() => {
-  	player.pos.x = mousePos().x
+  	if (mousePos().x > player.pos.x+3) {
+      player.flipX(true)
+      if(player.curAnim()!=="turn"){
+        player.play("turn")
+      }
+    }
+    else if (mousePos().x < player.pos.x-3) {
+      player.flipX(false)
+      if(player.curAnim()!=="turn"){
+        player.play("turn")
+      }
+    }
+    else {
+      if(player.curAnim()!=="idle"){
+        player.play("idle")
+      }
+    }
+    player.pos.x = mousePos().x
   })
   
   onClick(() => {

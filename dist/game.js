@@ -3012,6 +3012,21 @@ vec4 frag(vec3 pos, vec2 uv, vec4 color, sampler2D tex) {
       fixed()
     ]);
     onUpdate(() => {
+      if (mousePos().x > player.pos.x + 3) {
+        player.flipX(true);
+        if (player.curAnim() !== "turn") {
+          player.play("turn");
+        }
+      } else if (mousePos().x < player.pos.x - 3) {
+        player.flipX(false);
+        if (player.curAnim() !== "turn") {
+          player.play("turn");
+        }
+      } else {
+        if (player.curAnim() !== "idle") {
+          player.play("idle");
+        }
+      }
       player.pos.x = mousePos().x;
     });
     onClick(() => {
