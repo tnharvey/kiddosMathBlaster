@@ -1,5 +1,6 @@
 // TODO: 
-// Current: 
+// Current: branch and test fix for fall rate. Reset fall rate to zero for all on update, then set again.
+// Next: Get All Levels working
 // Settings. Add game speed (gravity speed factor) as slider or +/- buttons
 // X Make the letters fall in from the top
 //    - at varying speeds
@@ -71,14 +72,10 @@ var hints = false
 // SCENE: TEST
 
 scene("test", ()=> {
-  addText("answer",{factA:5,factB:2,correctAnswer:10})
-  addText("answer",{factA:5,factB:2,correctAnswer:10})
-  addText("answer",{factA:5,factB:2,correctAnswer:10})
-  addText("answer",{factA:5,factB:2,correctAnswer:10})
-  addText("answer",{factA:5,factB:2,correctAnswer:10})
-  addText("Answer",{factA:5,factB:2,correctAnswer:10})
+
 })
 
+// ** MENU SCENES **
 // SCENE: START MENU
 scene("start", () => {
   addButton("All Levels", vec2(width()/2, (height()/10)*2), () => go("battle"))
@@ -124,6 +121,15 @@ scene("settings", () => {
   addButton("Back", vec2(width()/2, (height()/7)*5), () => go("start"))
 })
 
+// SCENE: CREDITS
+scene("credits", () => {
+// Built with Kaboom.js
+// Developed by T. Neal Harvey
+// Stars background from CKH4's codepen (modified) https://codepen.io/CKH4/pen/vNyyaL?editors=0110
+
+})
+
+// ** GAME SCENES **
 // SCENE: BATTLE
 scene("battle", (level) => {
 
@@ -306,76 +312,9 @@ const player =	add([
 
 })
 
-function addExplode(p, n, rad, size) {
-  for (let i = 0; i < n; i++) {
-    wait(rand(n * 0.1), () => {
-      for (let i = 0; i < 2; i++) {
-        add([
-          pos(p.add(rand(vec2(-rad), vec2(rad)))),
-          rect(4, 4),
-          outline(4),
-          scale(1 * size, 1 * size),
-          lifespan(0.1),
-          grow(rand(48, 72) * size),
-          origin("center"),
-        ])
-      }
-    })
-  }
-}
+// ** FUNCTIONS **
 
-function grow(rate) {
-  return {
-    update() {
-      const n = rate * dt()
-      this.scale.x += n
-      this.scale.y += n
-    },
-  }
-}
-
-/*function generateEnemies(fact1,fact2,correctAnswer) {
-  var textColor = rgb(255,255,255)
-  for (var v = 0; v < 8; v++) {
-    var textVal = multTable[randi(fact1,fact2)][randi(1,13)];
-    var enemyPos = vec2(randi(width()/10,width()-(width()/10)),randi(0,height()/10))
-    if(textVal == correctAnswer){
-      textTag = "Answer";
-    }
-    else {
-      textTag = "answer";
-    }
-    add([
-      pos(enemyPos),
-      text(textVal, { size: 40 }),
-      lifespan(6),
-      origin("center"),
-      area(),
-      cleanup(),
-      textTag,
-      {
-        speed: 75
-      },
-    ])
-  }
-  if(hints){
-    textColor = rgb(255,0,0)
-  }
-  add([
-      pos(enemyPos),
-      text(correctAnswer, { size: 40 }),
-      lifespan(6),
-      color(textColor),
-      origin("center"),
-      area(),
-      cleanup(),
-      "Answer",
-      {
-        speed: 75
-      },
-    ])
-}*/
-
+// GENERATIVE FUNCTIONS
 function generateEnemies(fact1,fact2,correctAnswer) {
   var enemyVals = {factA:fact1,factB:fact2,correctAnswer:correctAnswer}
   for (var v = 0; v < 8; v++) {
@@ -385,27 +324,6 @@ function generateEnemies(fact1,fact2,correctAnswer) {
   addText("Answer",enemyVals)
 }
 
-function spawnBullet(p) {
-  const BULLET_SPEED = 1200
-  
-  add([
-    rect(4, 16),
-    area(),
-    pos(p),
-    origin("center"),
-    color(40, 40, 255),
-    outline(1),
-    move(UP, BULLET_SPEED),
-    cleanup(),
-    // strings here means a tag
-    "bullet",
-  ])
-}
-
-function shuffleArray(arr) {
-  return arr.sort(() => Math.random() - 0.5);
-}
-
 function addText(tag,opt) {
   var textColor = rgb(255,255,255)
   var textPos = vec2(randi(width()/10,width()-(width()/10)),randi(0,height()/10))
@@ -413,11 +331,6 @@ function addText(tag,opt) {
     //if(opt.factA in opt && opt.factB in opt){
     console.log(opt.factA + ", " + opt.factB)  
     var textVal = multTable[randi(opt.factA,opt.factB)][randi(1,13)]
-    /*}
-    else {
-      console.log("ERROR: Required values missing from addText() arguments for Question or Answer type.")
-    return
-    }*/
   }
   
   if(tag=="Answer" && hints){
@@ -477,6 +390,58 @@ function addText(tag,opt) {
   }    
 }
 
+function spawnBullet(p) {
+  const BULLET_SPEED = 1200
+  
+  add([
+    rect(4, 16),
+    area(),
+    pos(p),
+    origin("center"),
+    color(40, 40, 255),
+    outline(1),
+    move(UP, BULLET_SPEED),
+    cleanup(),
+    "bullet",
+  ])
+}
+
+
+// VISUAL FUNCTIONS
+
+function addExplode(p, n, rad, size) {
+  for (let i = 0; i < n; i++) {
+    wait(rand(n * 0.1), () => {
+      for (let i = 0; i < 2; i++) {
+        add([
+          pos(p.add(rand(vec2(-rad), vec2(rad)))),
+          rect(4, 4),
+          outline(4),
+          scale(1 * size, 1 * size),
+          lifespan(0.1),
+          grow(rand(48, 72) * size),
+          origin("center"),
+        ])
+      }
+    })
+  }
+}
+
+function grow(rate) {
+  return {
+    update() {
+      const n = rate * dt()
+      this.scale.x += n
+      this.scale.y += n
+    },
+  }
+}
+
+// UTILITY FUNCTIONS
+function shuffleArray(arr) {
+  return arr.sort(() => Math.random() - 0.5);
+}
+
 function addButton(txt, p, f) {
 //text is button text, p is button position, f is button function/action
 	const btn = add([
@@ -503,4 +468,5 @@ function addButton(txt, p, f) {
 	})
 
 }
+
 go("start")

@@ -2943,12 +2943,6 @@ vec4 frag(vec3 pos, vec2 uv, vec4 color, sampler2D tex) {
   });
   var hints = false;
   scene("test", () => {
-    addText("answer", { factA: 5, factB: 2, correctAnswer: 10 });
-    addText("answer", { factA: 5, factB: 2, correctAnswer: 10 });
-    addText("answer", { factA: 5, factB: 2, correctAnswer: 10 });
-    addText("answer", { factA: 5, factB: 2, correctAnswer: 10 });
-    addText("answer", { factA: 5, factB: 2, correctAnswer: 10 });
-    addText("Answer", { factA: 5, factB: 2, correctAnswer: 10 });
   });
   scene("start", () => {
     addButton("All Levels", vec2(width() / 2, height() / 10 * 2), () => go("battle"));
@@ -2994,6 +2988,8 @@ vec4 frag(vec3 pos, vec2 uv, vec4 color, sampler2D tex) {
       fixed()
     ]);
     addButton("Back", vec2(width() / 2, height() / 7 * 5), () => go("start"));
+  });
+  scene("credits", () => {
   });
   scene("battle", (level) => {
     const levels = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
@@ -3148,34 +3144,6 @@ vec4 frag(vec3 pos, vec2 uv, vec4 color, sampler2D tex) {
     addButton("Menu", vec2(width() / 2, height() / 7 * 5), () => go("start"));
     addButton("Start Over", vec2(width() / 2, height() / 7 * 6), () => go("battle"));
   });
-  function addExplode(p, n, rad, size) {
-    for (let i = 0; i < n; i++) {
-      wait(rand(n * 0.1), () => {
-        for (let i2 = 0; i2 < 2; i2++) {
-          add([
-            pos(p.add(rand(vec2(-rad), vec2(rad)))),
-            rect(4, 4),
-            outline(4),
-            scale(1 * size, 1 * size),
-            lifespan(0.1),
-            grow(rand(48, 72) * size),
-            origin("center")
-          ]);
-        }
-      });
-    }
-  }
-  __name(addExplode, "addExplode");
-  function grow(rate) {
-    return {
-      update() {
-        const n = rate * dt();
-        this.scale.x += n;
-        this.scale.y += n;
-      }
-    };
-  }
-  __name(grow, "grow");
   function generateEnemies(fact1, fact2, correctAnswer) {
     var enemyVals = { factA: fact1, factB: fact2, correctAnswer };
     for (var v2 = 0; v2 < 8; v2++) {
@@ -3185,25 +3153,6 @@ vec4 frag(vec3 pos, vec2 uv, vec4 color, sampler2D tex) {
     addText("Answer", enemyVals);
   }
   __name(generateEnemies, "generateEnemies");
-  function spawnBullet(p) {
-    const BULLET_SPEED = 1200;
-    add([
-      rect(4, 16),
-      area(),
-      pos(p),
-      origin("center"),
-      color(40, 40, 255),
-      outline(1),
-      move(UP, BULLET_SPEED),
-      cleanup(),
-      "bullet"
-    ]);
-  }
-  __name(spawnBullet, "spawnBullet");
-  function shuffleArray(arr) {
-    return arr.sort(() => Math.random() - 0.5);
-  }
-  __name(shuffleArray, "shuffleArray");
   function addText(tag, opt) {
     var textColor = rgb(255, 255, 255);
     var textPos = vec2(randi(width() / 10, width() - width() / 10), randi(0, height() / 10));
@@ -3264,6 +3213,53 @@ vec4 frag(vec3 pos, vec2 uv, vec4 color, sampler2D tex) {
     }
   }
   __name(addText, "addText");
+  function spawnBullet(p) {
+    const BULLET_SPEED = 1200;
+    add([
+      rect(4, 16),
+      area(),
+      pos(p),
+      origin("center"),
+      color(40, 40, 255),
+      outline(1),
+      move(UP, BULLET_SPEED),
+      cleanup(),
+      "bullet"
+    ]);
+  }
+  __name(spawnBullet, "spawnBullet");
+  function addExplode(p, n, rad, size) {
+    for (let i = 0; i < n; i++) {
+      wait(rand(n * 0.1), () => {
+        for (let i2 = 0; i2 < 2; i2++) {
+          add([
+            pos(p.add(rand(vec2(-rad), vec2(rad)))),
+            rect(4, 4),
+            outline(4),
+            scale(1 * size, 1 * size),
+            lifespan(0.1),
+            grow(rand(48, 72) * size),
+            origin("center")
+          ]);
+        }
+      });
+    }
+  }
+  __name(addExplode, "addExplode");
+  function grow(rate) {
+    return {
+      update() {
+        const n = rate * dt();
+        this.scale.x += n;
+        this.scale.y += n;
+      }
+    };
+  }
+  __name(grow, "grow");
+  function shuffleArray(arr) {
+    return arr.sort(() => Math.random() - 0.5);
+  }
+  __name(shuffleArray, "shuffleArray");
   function addButton(txt, p, f2) {
     const btn = add([
       text(txt),
