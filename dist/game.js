@@ -2943,6 +2943,20 @@ vec4 frag(vec3 pos, vec2 uv, vec4 color, sampler2D tex) {
   });
   var hints = false;
   scene("test", () => {
+    var i = 0;
+    loop(5, () => {
+      if (i > 3) {
+        destroyAll("testText");
+      }
+      add([
+        text("test" + i, { size: 80 }),
+        pos(width() / 10, i * 100),
+        origin("topleft"),
+        fixed(),
+        "testText"
+      ]);
+      i = i + 1;
+    });
   });
   scene("start", () => {
     addButton("All Levels", vec2(width() / 2, height() / 10 * 2), () => go("battle"));
@@ -3085,7 +3099,6 @@ vec4 frag(vec3 pos, vec2 uv, vec4 color, sampler2D tex) {
           origin("center"),
           color(180, 0, 0),
           fixed(),
-          lifespan(8),
           "question"
         ]);
         firstRun = false;
@@ -3098,13 +3111,13 @@ vec4 frag(vec3 pos, vec2 uv, vec4 color, sampler2D tex) {
           currentPosition++;
           factorB = thisLevel[currentPosition];
           correctAnswer = factorA * factorB;
+          destroyAll("question");
           add([
             text(factorA + "x" + factorB, { size: 110 }),
             pos(width() / 2, height() / 10),
             origin("center"),
             color(180, 0, 0),
             fixed(),
-            lifespan(10),
             "question"
           ]);
         }
@@ -3164,20 +3177,19 @@ vec4 frag(vec3 pos, vec2 uv, vec4 color, sampler2D tex) {
       textColor = rgb(180, 0, 0);
     }
     if (tag == "question") {
+      destroy(get("question"));
       add([
         text(opt.factA + "x" + opt.factB, { size: 110 }),
         pos(width() / 2, height() / 10),
         origin("center"),
         color(180, 0, 0),
         fixed(),
-        lifespan(10),
         tag
       ]);
     } else if (tag == "answer") {
       add([
         pos(textPos),
         text(textVal, { size: 40 }),
-        lifespan(6),
         origin("center"),
         area(),
         body(),
@@ -3188,7 +3200,6 @@ vec4 frag(vec3 pos, vec2 uv, vec4 color, sampler2D tex) {
       add([
         pos(textPos),
         text(opt.correctAnswer, { size: 40 }),
-        lifespan(6),
         color(textColor),
         origin("center"),
         area(),
@@ -3197,19 +3208,14 @@ vec4 frag(vec3 pos, vec2 uv, vec4 color, sampler2D tex) {
         "Answer"
       ]);
     } else {
-      if (opt.pos in opt && opt.text in opt && opt.size in opt && opt.life in opt) {
-        add([
-          pos(opt.pos),
-          text(opt.text, { size: opt.size }),
-          lifespan(opt.life),
-          origin("center"),
-          area(),
-          cleanup(),
-          textTag
-        ]);
-      } else {
-        console.log("ERROR: addText() missing required values for generic text.");
-      }
+      add([
+        pos(opt.pos),
+        text(opt.text, { size: opt.size }),
+        origin("center"),
+        area(),
+        cleanup(),
+        textTag
+      ]);
     }
   }
   __name(addText, "addText");
