@@ -2959,7 +2959,7 @@ vec4 frag(vec3 pos, vec2 uv, vec4 color, sampler2D tex) {
     });
   });
   scene("start", () => {
-    addButton("All Levels", vec2(width() / 2, height() / 10 * 2), () => go("battle"));
+    addButton("All Levels", vec2(width() / 2, height() / 10 * 2), () => go("battle", "all"));
     addButton("Pick Level", vec2(width() / 2, height() / 10 * 4), () => go("levels"));
     addButton("Settings", vec2(width() / 2, height() / 10 * 6), () => go("settings"));
     addButton("Quit", vec2(width() / 2, height() / 10 * 8), () => window.close());
@@ -3085,33 +3085,16 @@ vec4 frag(vec3 pos, vec2 uv, vec4 color, sampler2D tex) {
       player.play("idle");
     });
     var thisLevel = shuffleArray(levels);
-    var factorA = level;
+    var factorA = 0;
     var factorB = thisLevel[1];
     var correctAnswer = factorA * factorB;
     var cyclesCount = 0;
     var currentPosition = 0;
     var firstRun = true;
-    loop(6, () => {
-      if (firstRun) {
-        add([
-          text(factorA + "x" + factorB, { size: 110 }),
-          pos(width() / 2, height() / 10),
-          origin("center"),
-          color(180, 0, 0),
-          fixed(),
-          "question"
-        ]);
-        firstRun = false;
-      }
-      if (cyclesCount == 2) {
-        cyclesCount = 0;
-        if (currentPosition == 11) {
-          go("win", scoreText.text);
-        } else {
-          currentPosition++;
-          factorB = thisLevel[currentPosition];
-          correctAnswer = factorA * factorB;
-          destroyAll("question");
+    if (level >= 0 && level < 13) {
+      factorA = level;
+      loop(6, () => {
+        if (firstRun) {
           add([
             text(factorA + "x" + factorB, { size: 110 }),
             pos(width() / 2, height() / 10),
@@ -3120,16 +3103,81 @@ vec4 frag(vec3 pos, vec2 uv, vec4 color, sampler2D tex) {
             fixed(),
             "question"
           ]);
+          firstRun = false;
         }
-      }
-      console.log(factorA + ", " + factorB + ", " + correctAnswer);
-      generateEnemies(factorA, factorB, correctAnswer);
-      cyclesCount++;
-    });
+        if (cyclesCount == 2) {
+          cyclesCount = 0;
+          if (currentPosition == 11) {
+            go("win", scoreText.text);
+          } else {
+            currentPosition++;
+            factorB = thisLevel[currentPosition];
+            correctAnswer = factorA * factorB;
+            destroyAll("question");
+            add([
+              text(factorA + "x" + factorB, { size: 110 }),
+              pos(width() / 2, height() / 10),
+              origin("center"),
+              color(180, 0, 0),
+              fixed(),
+              "question"
+            ]);
+          }
+        }
+        generateEnemies(factorA, factorB, correctAnswer);
+        cyclesCount++;
+      });
+    } else if (level == "all") {
+      loop(6, () => {
+        if (firstRun) {
+          add([
+            text(factorA + "x" + factorB, { size: 110 }),
+            pos(width() / 2, height() / 10),
+            origin("center"),
+            color(180, 0, 0),
+            fixed(),
+            "question"
+          ]);
+          firstRun = false;
+        }
+        if (cyclesCount == 1) {
+          if (currentPosition == 11) {
+            if (factorA == 12) {
+              go("win", scoreText.text);
+            }
+            factorA++;
+            currentPosition = 0;
+            thisLevel = shuffleArray(levels);
+          } else {
+            currentPosition++;
+            factorB = thisLevel[currentPosition];
+            correctAnswer = factorA * factorB;
+            destroyAll("question");
+            add([
+              text(factorA + "x" + factorB, { size: 110 }),
+              pos(width() / 2, height() / 10),
+              origin("center"),
+              color(180, 0, 0),
+              fixed(),
+              "question"
+            ]);
+          }
+          cyclesCount = 0;
+        }
+        generateEnemies(factorA, factorB, correctAnswer);
+        cyclesCount++;
+      });
+    }
     onCollide("bullet", "answer", (b2, e) => {
+      if (e.text == correctAnswer) {
+        console.log("correct: " + factorA + ", " + factorB + ", " + correctAnswer + ", " + e.text);
+        scoreText.text = scoreText.text + 5;
+      } else {
+        console.log("incorrect: " + factorA + ", " + factorB + ", " + correctAnswer + ", " + e.text);
+        scoreText.text = scoreText.text - 1;
+      }
       destroy(b2);
       destroy(e);
-      scoreText.text = scoreText.text - 1;
       play("explode");
       addExplode(b2.pos, 1, 24, 1);
     });
@@ -3160,7 +3208,6 @@ vec4 frag(vec3 pos, vec2 uv, vec4 color, sampler2D tex) {
   function generateEnemies(fact1, fact2, correctAnswer) {
     var enemyVals = { factA: fact1, factB: fact2, correctAnswer };
     for (var v2 = 0; v2 < 8; v2++) {
-      console.log(enemyVals);
       addText("answer", enemyVals);
     }
     addText("Answer", enemyVals);
@@ -3168,9 +3215,8 @@ vec4 frag(vec3 pos, vec2 uv, vec4 color, sampler2D tex) {
   __name(generateEnemies, "generateEnemies");
   function addText(tag, opt) {
     var textColor = rgb(255, 255, 255);
-    var textPos = vec2(randi(width() / 10, width() - width() / 10), randi(0, height() / 10));
+    var textPos = vec2(randi(width() / 10, width() - width() / 10), randi(0, height() / 100));
     if (tag == "question" || tag == "answer" || tag == "Answer") {
-      console.log(opt.factA + ", " + opt.factB);
       var textVal = multTable[randi(opt.factA, opt.factB)][randi(1, 13)];
     }
     if (tag == "Answer" && hints) {

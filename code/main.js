@@ -1,5 +1,6 @@
 // TODO: 
-// Current: branch and test fix for fall rate. Reset fall rate to zero for all on update, then set again.
+// Current: 0x0 and 0x1 generate all 0s for all enemies. WHY
+//branch and test fix for fall rate. Reset fall rate to zero for all on update, then set again. Currently using gravity, but with reposition of start point to top of screen, they all fall like wall.
 // Next: Get All Levels working
 // Settings. Add game speed (gravity speed factor) as slider or +/- buttons
 // X Make the letters fall in from the top
@@ -91,7 +92,7 @@ scene("test", ()=> {
 // ** MENU SCENES **
 // SCENE: START MENU
 scene("start", () => {
-  addButton("All Levels", vec2(width()/2, (height()/10)*2), () => go("battle"))
+  addButton("All Levels", vec2(width()/2, (height()/10)*2), () => go("battle","all"))
   addButton("Pick Level", vec2(width()/2, (height()/10)*4), () => go("levels"))
   addButton("Settings", vec2(width()/2, (height()/10)*6), () => go("settings"))
   addButton("Quit", vec2(width()/2, (height()/10)*8), () => window.close())
@@ -237,57 +238,106 @@ onKeyRelease(["left", "right"], () => {
 // PLAY LOOP
   // randomize list of numbers from 0 to 12
   var thisLevel = shuffleArray(levels)
-  var factorA = level
+  var factorA = 0
 	var factorB = thisLevel[1]
   var correctAnswer = factorA * factorB;
+  //cyclesCount is how many times a question has been repeated. Needs a rename.
   var cyclesCount = 0
   var currentPosition = 0
   var firstRun = true
-  
-  loop(6,()=>{
-    if (firstRun){
-      add([
-    		text(factorA + "x" + factorB, { size: 110 }),
-    		pos(width()/2, height()/10),
-    		origin("center"),
-        color(180,0,0),
-    		fixed(),
-    		"question"
-    	])
-      firstRun=false
-    }
-    if(cyclesCount==2){
-      cyclesCount=0
-      if(currentPosition==11){
-        go("win",scoreText.text)
+
+  // specific level
+  if(level >= 0 && level < 13){
+    factorA = level
+    loop(6,()=>{
+      if (firstRun){
+        add([
+      		text(factorA + "x" + factorB, { size: 110 }),
+      		pos(width()/2, height()/10),
+      		origin("center"),
+          color(180,0,0),
+      		fixed(),
+      		"question"
+      	])
+        firstRun=false
       }
-      else {
-      currentPosition++
-      factorB = thisLevel[currentPosition]
-      correctAnswer=factorA*factorB
-        
-      destroyAll("question");
-      add([
-    		text(factorA + "x" + factorB, { size: 110 }),
-    		pos(width()/2, height()/10),
-    		origin("center"),
-        color(180,0,0),
-    		fixed(),
-    		"question"
-    	])
+      if(cyclesCount==2){
+        cyclesCount=0
+        if(currentPosition==11){
+          go("win",scoreText.text)
+        }
+        else {
+        currentPosition++
+        factorB = thisLevel[currentPosition]
+        correctAnswer=factorA*factorB
+        destroyAll("question");
+        add([
+      		text(factorA + "x" + factorB, { size: 110 }),
+      		pos(width()/2, height()/10),
+      		origin("center"),
+          color(180,0,0),
+      		fixed(),
+      		"question"
+      	])
+        }
       }
-    }
-    console.log(factorA + ", " + factorB + ", " + correctAnswer)
-    generateEnemies(factorA,factorB,correctAnswer);
-    
-    cyclesCount++
-    //console.log("cycles: " + cyclesCount + ", currentP: " + currentPosition + ", factorB: " + factorB)
-  })
+      generateEnemies(factorA,factorB,correctAnswer);
+      cyclesCount++
+    })
+  }
+  // all levels
+  else if(level=="all"){
+    loop(6,()=>{
+      if (firstRun){
+        add([
+      		text(factorA + "x" + factorB, { size: 110 }),
+      		pos(width()/2, height()/10),
+      		origin("center"),
+          color(180,0,0),
+      		fixed(),
+      		"question"
+      	])
+        firstRun=false
+      }
+      if(cyclesCount==1){
+        if(currentPosition==11){
+          if(factorA==12){
+            go("win",scoreText.text)
+          }
+          factorA++
+          currentPosition=0
+          thisLevel = shuffleArray(levels)
+        }
+        else {
+          currentPosition++
+          factorB = thisLevel[currentPosition]
+          correctAnswer=factorA*factorB
+          destroyAll("question");
+          add([
+        		text(factorA + "x" + factorB, { size: 110 }),
+        		pos(width()/2, height()/10),
+        		origin("center"),
+            color(180,0,0),
+        		fixed(),
+        		"question"
+        	])
+        }
+        cyclesCount=0
+      }
+      generateEnemies(factorA,factorB,correctAnswer);
+      cyclesCount++
+    })
+  }
 
 	onCollide("bullet", "answer",(b, e) => {
-		destroy(b)
-		destroy(e)
-    scoreText.text = scoreText.text - 1
+		if(e.text==correctAnswer){
+      scoreText.text = scoreText.text + 5
+    }
+    else {
+      scoreText.text = scoreText.text - 1
+    }
+    destroy(b)
+		destroy(e)    
 		play("explode")
 		addExplode(b.pos, 1, 24, 1)
 	})
@@ -298,9 +348,6 @@ onKeyRelease(["left", "right"], () => {
     scoreText.text = scoreText.text + 5
 		play("explode")
 		addExplode(b.pos, 1, 24, 1)
-/*  if(scoreText.text >= 10){
-      go("win",scoreText.text)
-    }*/
   })
 })
 
@@ -331,7 +378,7 @@ const player =	add([
 function generateEnemies(fact1,fact2,correctAnswer) {
   var enemyVals = {factA:fact1,factB:fact2,correctAnswer:correctAnswer}
   for (var v = 0; v < 8; v++) {
-    console.log(enemyVals)
+    //console.log(enemyVals)
     addText("answer",enemyVals)
   }
   addText("Answer",enemyVals)
@@ -339,10 +386,10 @@ function generateEnemies(fact1,fact2,correctAnswer) {
 
 function addText(tag,opt) {
   var textColor = rgb(255,255,255)
-  var textPos = vec2(randi(width()/10,width()-(width()/10)),randi(0,height()/10))
+  var textPos = vec2(randi(width()/10,width()-(width()/10)),randi(0,height()/100))
   if (tag=="question"||tag=="answer"||tag=="Answer"){
     //if(opt.factA in opt && opt.factB in opt){
-    console.log(opt.factA + ", " + opt.factB)  
+    //console.log(opt.factA + ", " + opt.factB)  
     var textVal = multTable[randi(opt.factA,opt.factB)][randi(1,13)]
   }
   
